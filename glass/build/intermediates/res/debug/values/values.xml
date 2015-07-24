@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- From: file:/Users/avicooper-Summer2015/Google%20Drive/Summer%202015/GoogleGlassCPS/glass/src/main/res/values/strings.xml -->
+    <eat-comment/>
+    <string name="app_name">Google Glass CPS</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="title_activity_main">Home</string>
+    <!-- From: file:/Users/avicooper-Summer2015/Google%20Drive/Summer%202015/GoogleGlassCPS/glass/src/main/res/values/styles.xml -->
+    <eat-comment/>
+    <style name="AppTheme" parent="android:Theme.DeviceDefault"/>
+</resources>

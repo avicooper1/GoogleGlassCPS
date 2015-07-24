@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Google Glass CPS</string>
+    <string name="title_activity_main">Home</string>
+    <string name="hello_world">Hello world!</string>
+</resources>

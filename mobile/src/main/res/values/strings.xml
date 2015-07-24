@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Google Glass CPS</string>
+
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
+    <string name="title_activity_message_received">MessageReceivedActivity</string>
+    <string name="title_activity_received_message">ReceivedMessageActivity</string>
+</resources>

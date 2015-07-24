@@ -1,0 +1,4 @@
+<!-- For more information about voice trigger, check out: https://developers.google.com/glass/develop/gdk/starting-glassware -->
+<trigger command="RECOGNIZE_THIS" />
+
+<!-- From: file:/Users/avicooper-Summer2015/Google%20Drive/Summer%202015/GoogleGlassCPS/glass/src/main/res/xml/voice_trigger.xml -->
