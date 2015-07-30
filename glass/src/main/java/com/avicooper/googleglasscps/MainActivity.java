@@ -2,7 +2,11 @@ package com.avicooper.googleglasscps;
 
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
+import android.content.ComponentName;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.hardware.Camera;
 import android.net.Uri;
 import android.os.Bundle;
@@ -19,10 +23,12 @@ import com.google.android.glass.widget.CardBuilder;
 import com.google.android.glass.widget.CardScrollAdapter;
 import com.google.android.glass.widget.CardScrollView;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.ref.SoftReference;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -99,12 +105,9 @@ public class MainActivity extends Activity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (resultCode == RESULT_OK){
-//            String picturePath = data.getStringExtra(Intents.EXTRA_PICTURE_FILE_PATH);
-//            String thumbnailPath = data.getStringExtra(Intents.EXTRA_THUMBNAIL_FILE_PATH);
-//            processPictureWhenReady(picturePath);
-            String sendString = "Hello. My name is Avi Cooper. And I have to write a really long string to test out how my application splits up and puts together bytes over bluetooth";
+            String picturePath = data.getStringExtra(Intents.EXTRA_PICTURE_FILE_PATH);
             try {
-                BTConnected.sendString(sendString);
+                processPictureWhenReady(picturePath);
             } catch (IOException e) {
                 e.printStackTrace();
             } catch (InterruptedException e) {
@@ -113,13 +116,22 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void processPictureWhenReady(final String picturePath) {
+    private void processPictureWhenReady(final String picturePath) throws IOException, InterruptedException {
         final File pictureFile = new File(picturePath);
 
         if (pictureFile.exists()) {
             // The picture is ready; process it.
             Log.d("asdf glass", "the picture is ready to be used");
-            BTConnected.sendFile(pictureFile);
+            //BTConnected.sendFile(pictureFile);
+            Drawable drawable = Drawable.createFromPath(picturePath);
+            Log.d("asdf mobile", "should be displaying received message");
+            Bitmap bitmap = ((BitmapDrawable) drawable).getBitmap();
+            ByteArrayOutputStream stream = new ByteArrayOutputStream();
+
+            Bitmap a = Bitmap.createScaledBitmap(bitmap, bitmap.getWidth() / 2, bitmap.getHeight() / 2, false);
+            a.compress(Bitmap.CompressFormat.JPEG, 30, stream);
+            byte[] bitmapdata = stream.toByteArray();
+            BTConnected.largeWrite(bitmapdata);
         } else {
             Log.d("asdf glass", "the picture is not ready to be used");
             // The file does not exist yet. Before starting the file observer, you
@@ -150,7 +162,13 @@ public class MainActivity extends Activity {
                             runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
-                                    processPictureWhenReady(picturePath);
+                                    try {
+                                        processPictureWhenReady(picturePath);
+                                    } catch (IOException e) {
+                                        e.printStackTrace();
+                                    } catch (InterruptedException e) {
+                                        e.printStackTrace();
+                                    }
                                 }
                             });
                         }

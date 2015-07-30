@@ -1,7 +1,9 @@
 package com.avicooper.googleglasscps;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
@@ -19,6 +21,7 @@ public class ReceivedMessageActivity extends ActionBarActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Intent intent = getIntent();
+        Log.d("asdf mobile", "about to show message");
         String methodToCall = intent.getStringExtra("methodToCall");
         byte[] byteArray = intent.getByteArrayExtra("byte array");
         switch (methodToCall){
@@ -47,7 +50,12 @@ public class ReceivedMessageActivity extends ActionBarActivity {
         setContentView(R.layout.activity_received_message);
         ImageView mImg;
         mImg = (ImageView) findViewById(R.id.received_image);
-        mImg.setImageBitmap(BitmapFactory.decodeByteArray(bytes, 0, bytes.length));
+        Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+        mImg.setImageBitmap(bitmap);
+        Log.d("asdf mobile", "hello and googbye");
+        int height = bitmap.getHeight();
+        int width = bitmap.getWidth();
+        Log.d("asdf mobile", "the size of the picture is: " + String.valueOf(height) + " by " + String.valueOf(width));
     }
 
     @Override

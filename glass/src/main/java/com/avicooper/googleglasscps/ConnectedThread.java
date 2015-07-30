@@ -2,6 +2,8 @@ package com.avicooper.googleglasscps;
 
 import android.bluetooth.BluetoothSocket;
 import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.provider.MediaStore;
 import android.util.Log;
 
@@ -15,6 +17,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class ConnectedThread extends Thread {
     private final BluetoothSocket mmSocket;
@@ -39,59 +42,15 @@ public class ConnectedThread extends Thread {
     }
 
     public void run() {
-        byte[] buffer = new byte[1024];  // buffer store for the stream
-        int bytes; // bytes returned from read()
+        byte[] buffer = new byte[20];  // buffer store for the stream
 
         // Keep listening to the InputStream until an exception occurs
         while (true) {
             try {
-                // Read from the InputStream
-                bytes = mmInStream.read(buffer);
-                // Send the obtained bytes to the UI activity
-                //The following methods need to be implemented
-                //###mHandler.obtainMessage(MESSAGE_READ, bytes, -1, buffer).sendToTarget();
+                mmInStream.read(buffer);
             } catch (IOException e) {
                 break;
             }
-        }
-    }
-
-    public void sendPicture(Bitmap imageBitmap) throws InterruptedException {
-        ByteArrayOutputStream a = new ByteArrayOutputStream();
-        try {
-            imageBitmap.compress(Bitmap.CompressFormat.PNG, 100, a);
-        }
-        catch (Exception b){
-            Log.d("asdf glass", "it is failing here");
-        }
-        byte[] bytearray = a.toByteArray();
-        try {
-            largeWrite(bytearray);
-        } catch (InterruptedException e) {
-            Log.d("asdf glass", "failed to largeWrite image");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void sendFile (File file){
-
-        byte[] fileBytes = new byte[(int) file.length()];
-        try {
-            FileInputStream fileInputStream = new FileInputStream(file);
-            fileInputStream.read(fileBytes);
-            fileInputStream.close();
-            largeWrite(fileBytes);
-
-        } catch (FileNotFoundException e) {
-            System.out.println("File Not Found.");
-            e.printStackTrace();
-        }
-        catch (IOException e1) {
-            System.out.println("Error Reading The File.");
-            e1.printStackTrace();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
         }
     }
 
@@ -138,24 +97,46 @@ public class ConnectedThread extends Thread {
 
 
     /* Call this from the main activity to send data to the remote device */
-    public void write(byte[] bytes) {
-        try {
-            mmOutStream.write(bytes);
-        } catch (IOException e) { }
+    public void write(byte[] bytes) throws IOException, InterruptedException {
+        mmOutStream.write(bytes);
+        Thread.sleep((long) 1);
     }
 
+    private void writeWithProgressTracker(byte[][] arrayOfBytes) throws IOException, InterruptedException {
+//        int counter = 0;
+        final int onePercent = arrayOfBytes.length / 100;
+        final long beginTime = System.nanoTime();
+        for (byte[] bytes : arrayOfBytes) {
+            mmOutStream.write(bytes);
+            Thread.sleep((long) 1, 0);
+//            if (counter % onePercent == 0){
+//                Log.d("asdf glass", "finished: " + String.valueOf(counter / onePercent) + "%");
+//            }
+//            counter++;
+        }
+        final double totalTime = ((System.nanoTime() - beginTime) / 1000000000.0);
+        Log.d("asdf glass", "transmission finished in " + String.valueOf(totalTime) + " seconds");
+    }
+
+    private void writeFinishedTransmission() throws IOException, InterruptedException {
+        write(lastMessageNotice);
+    }
+
+    final private byte[] lastMessageNotice = "FinalMessageNotice..".getBytes();
+
     public void largeWrite(byte[] bytes) throws InterruptedException, IOException {
+
+        Log.d("asdf mobile", "entire byte array: " + new String(bytes));
         Log.d("asdf glass", "will try to send largeWrite");
 
-        String beginStreamString = new String("File size:" + String.valueOf((bytes.length / 18) + 1));
-        Log.d("asdf glass", "size of stream is: " + beginStreamString);
+        String beginStreamString = "File size:" + String.valueOf((bytes.length / 17) + 1);
         byte[] beginStreamBytes = new byte[20];
-        for (int x = 0; x < 18; x++){
+        for (int x = 0; x < 20; x++) {
             if (x < beginStreamString.length()){
-                beginStreamBytes[x + 2] = (byte) beginStreamString.charAt(x);
+                beginStreamBytes[x] = (byte) beginStreamString.charAt(x);
             }
             else{
-                beginStreamBytes[x + 2] = (byte) 'a';
+                beginStreamBytes[x] = (byte) 'a';
             }
         }
         printOutBytesArray(beginStreamBytes);
@@ -171,27 +152,31 @@ public class ConnectedThread extends Thread {
                 if (byteCounter != 0){
                     outerByteArrayCounter++;
                 }
-                arrayOfByteArrays[outerByteArrayCounter][0] = (byte) ((byte) (outerByteArrayCounter / (127 * 127) - 127));
-                arrayOfByteArrays[outerByteArrayCounter][1] = (byte) ((byte) (outerByteArrayCounter / 127) - 127);
-                arrayOfByteArrays[outerByteArrayCounter][2] = (byte) ((byte) (outerByteArrayCounter % 127) - 127);
+                arrayOfByteArrays[outerByteArrayCounter][0] = (byte) (outerByteArrayCounter / (256 * 256) - 128);
+                if (arrayOfByteArrays[outerByteArrayCounter][0] == -128) {
+                    arrayOfByteArrays[outerByteArrayCounter][1] = (byte) ((outerByteArrayCounter / 256) - 128);
+                } else {
+                    arrayOfByteArrays[outerByteArrayCounter][1] = (byte) ((byte) ((outerByteArrayCounter % (outerByteArrayCounter / (256 * 256))) / 256) - 128);
+                }
+                arrayOfByteArrays[outerByteArrayCounter][2] = (byte) ((byte) (outerByteArrayCounter % 256) - 128);
                 byteCounter += 3;
             }
             arrayOfByteArrays[outerByteArrayCounter][byteCounter % 20] = mByte;
             byteCounter++;
         }
+
         Log.d("asdf glass", "finished splitting up bytes. waiting for confirmation of size message");
 
         byte[] buffer = new byte[20];  // buffer store for the stream
         final byte[] receivedBytes = "ReceivedFileSizeMesg".getBytes();
+        final byte[] missingMessage = "TheMissingArraysAre:".getBytes();
 
         //Keep listening to the InputStream until an exception occurs
         while (true) {
             try {
                 mmInStream.read(buffer);
-                Log.d("asdf glass", "got message:");
-                printOutBytesArray(buffer);
-                if (buffer == receivedBytes){
-                    Log.d("asdf glass", "server recieved size message");
+                if (Arrays.equals(buffer, receivedBytes)) {
+                    Log.d("asdf glass", "server received size message");
                     break;
                 }
             } catch (IOException e) {
@@ -200,14 +185,40 @@ public class ConnectedThread extends Thread {
             }
         }
 
-        for (byte[] byteArray: arrayOfByteArrays){
-            write(byteArray);
-            try {
-                Thread.sleep(1);
-            } catch (InterruptedException e) {
-                Log.d("asdf system", "could not sleep");
-            }
-        }
+        writeWithProgressTracker(arrayOfByteArrays);
+        writeFinishedTransmission();
+
+//        ArrayList<Integer> arrayOfMissingPackets = new ArrayList<Integer>();
+//        while (true) {
+//            try {
+//                Log.d("asdf glass", "a");
+//                mmInStream.read(buffer);
+//                printOutBytesArray(buffer);
+//                if (Arrays.equals(buffer, lastMessageNotice)) {
+//                    break;
+//                } else {
+//                    StringBuilder intAsString = new StringBuilder();
+//                    int counter = 0;
+//                    while ((char) buffer[counter] != 'a') {
+//                        intAsString.append((char) buffer[counter]);
+//                        counter++;
+//                    }
+//                    if (intAsString.length() > 0) {
+//                        arrayOfMissingPackets.add(Integer.valueOf(String.valueOf(intAsString)));
+//                    }
+//                }
+//            } catch (IOException e) {
+//                Log.d("asdf glass", "not getting any message about lost bytes");
+//                return;
+//            }
+//        }
+//
+//        Log.d("asdf glass", "missing packets are:");
+//        for (int intOfArray: arrayOfMissingPackets){
+//            Log.d("asdf glass", String.valueOf(intOfArray));
+//            write(arrayOfByteArrays[intOfArray]);
+//        }
+//        writeFinishedTransmission();
     }
 
     /* Call this from the main activity to shutdown the connection */

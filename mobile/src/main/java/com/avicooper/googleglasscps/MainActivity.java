@@ -3,12 +3,17 @@ package com.avicooper.googleglasscps;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
 import com.example.avicooper.googleglasscps.R;
+
+import java.io.ByteArrayOutputStream;
 
 
 public class MainActivity extends Activity {
@@ -23,12 +28,12 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         Log.d("asdf", "began main");
         setContentView(R.layout.activity_main);
-        Log.d("asdf mobile", "starting array allocation");
-        long beginTime = System.nanoTime();
-        byte[][] testArray = new byte[100000][20];
-        long endTime = System.nanoTime();
-        Log.d("asdf mobile", "finished allocation with time: " + String.valueOf((endTime - beginTime) / 1000000.0) + "" +
-                " ms.");
+//        Log.d("asdf mobile", "starting array allocation");
+//        long beginTime = System.nanoTime();
+//        byte[][] testArray = new byte[10][20];
+//        long endTime = System.nanoTime();
+//        Log.d("asdf mobile", "finished allocation with time: " + String.valueOf((endTime - beginTime) / 1000000.0) + "" +
+//                " ms.");
     }
 
     @Override
@@ -44,6 +49,14 @@ public class MainActivity extends Activity {
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
+
+        Drawable drawable = getResources().getDrawable(R.drawable.forest);
+        Log.d("asdf mobile", "should be displaying received message");
+        Bitmap bitmap = ((BitmapDrawable) drawable).getBitmap();
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 0, stream);
+        byte[] bitmapdata = stream.toByteArray();
+        outputMessage(bitmapdata, "image");
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
