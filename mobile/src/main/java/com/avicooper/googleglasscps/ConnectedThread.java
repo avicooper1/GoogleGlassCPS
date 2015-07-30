@@ -95,7 +95,7 @@ public class ConnectedThread extends Thread {
                 arrayIndex = (((int) buffer[0] + 128) * 256 * 256) + (((int) buffer[1] + 128) * 256) + ((int) buffer[2] + 128);
                 if (!(Arrays.equals(buffer, lastMessageNotice))) {
                     if (arrayIndex < aggregatedBuffer.length) {
-                        aggregatedBuffer[arrayIndex] = buffer.clone();
+                        storeByteInArray(buffer);
                     }
 //                    else {
 //                        printOutBytesArrayAsInts(buffer);
@@ -156,10 +156,8 @@ public class ConnectedThread extends Thread {
         }
     }
 
-    private boolean oneResendAlready = false;
-
     private void storeByteInArray(byte[] buffer) {
-
+        aggregatedBuffer[arrayIndex] = buffer.clone();
     }
 
     private void showPicture(byte[][] arrayOfByteArrays) {
