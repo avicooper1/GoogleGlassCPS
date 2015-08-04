@@ -4,12 +4,14 @@ package com.avicooper.googleglasscps;
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.ImageView;
 
 import com.example.avicooper.googleglasscps.R;
 
@@ -22,12 +24,14 @@ public class MainActivity extends Activity {
 
     AcceptThread BTAccept = new AcceptThread(this);
     public ConnectedThread BTConnected;
+    ImageView mImg;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Log.d("asdf", "began main");
         setContentView(R.layout.activity_main);
+        mImg = (ImageView) findViewById(R.id.received_image);
 //        Log.d("asdf mobile", "starting array allocation");
 //        long beginTime = System.nanoTime();
 //        byte[][] testArray = new byte[10][20];

@@ -1,22 +1,15 @@
 package com.avicooper.googleglasscps;
 
 
-import android.app.WallpaperManager;
 import android.bluetooth.BluetoothSocket;
-import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
-import android.media.Image;
+import android.os.Environment;
 import android.util.Log;
 
-import com.example.avicooper.googleglasscps.R;
-
-import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -49,18 +42,47 @@ public class ConnectedThread extends Thread {
         start();
     }
 
-    int counter = 0;
+    //Class methods
+    public void write(byte[] bytes){
+
+        try {
+            mmOutStream.write(bytes);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            Thread.sleep((long) 0, 100000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /* Call this from the main activity to shutdown the connection */
+    public void cancel() {
+        try {
+            mmSocket.close();
+        } catch (IOException e) {
+        }
+    }
+
+
+
     final private byte[] firstMessageHeader = "File size:".getBytes();
     final private byte[] lastMessageNotice = "FinalMessageNotice..".getBytes();
+    final private byte[] receivedMessageNotice = "ReceivedMessageCont.".getBytes();
+    final private byte[] secondPacketsSendAttemptNotice = "SecondPacketsSend...".getBytes();
+    final private byte[] noMissingPacketsNotice = "NoMoreMissingPackets".getBytes();
+    final private byte[] clearBuffer = "aaaaaaaaaaaaaaaaaaaa".getBytes();
     byte[][] aggregatedBuffer;
-    int sizeOfIncomingData;
-    boolean alreadyReceivedSize = false;
-    int arrayIndex = 0;
+    boolean waitingForCommand = true;
 
+
+    //My this class methods
     public void run() {
 
         byte[] buffer = new byte[20];  // buffer store for the stream
-        Log.d("asdf mobile", "listning for messages");
+        Log.d("asdf mobile", "listening for messages");
 
         // Keep listening to the InputStream until an exception occurs
         while (true) {
@@ -70,114 +92,90 @@ public class ConnectedThread extends Thread {
             } catch (IOException e) {
             }
 
-            if (!alreadyReceivedSize) {
+            if (waitingForCommand) {
                 if (Arrays.equals(Arrays.copyOfRange(buffer, 0, 10), firstMessageHeader)) {
-                    int counter = 10;
-                    printOutBytesArray(buffer);
-                    while (buffer[counter] != 'a') {
-                        counter++;
-                    }
-                    sizeOfIncomingData = Integer.valueOf(new String(Arrays.copyOfRange(buffer, 10, counter)));
-                    aggregatedBuffer = new byte[sizeOfIncomingData][20];
-                    alreadyReceivedSize = true;
-                    try {
-                        write("ReceivedFileSizeMesg".getBytes());
-                    } catch (IOException e) {
-                    } catch (InterruptedException e) {
-                    }
+                    final int packetsAmount = findIntsInFilledBuffer(Arrays.copyOfRange(buffer, 10, buffer.length));
+                    aggregatedBuffer = new byte[packetsAmount][18];
+                    waitingForCommand = false;
+                    Log.d("asdf mobile", "the size of the transmission is " + String.valueOf(packetsAmount) + " packets");
+                    write(receivedMessageNotice);
+                    continue;
                 }
-            } else {
-                if ((int) buffer[0] == -128) {
-                    arrayIndex = (((int) buffer[1] + 128) * 256) + ((int) buffer[2] + 128);
-                } else {
-                    arrayIndex = (((int) buffer[0] + 128) * 256 * 256) + (((int) buffer[1] + 128) * 256) + ((int) buffer[2] + 128);
+                else if(Arrays.equals(buffer, secondPacketsSendAttemptNotice)){
+                    waitingForCommand = false;
+                    continue;
                 }
-                arrayIndex = (((int) buffer[0] + 128) * 256 * 256) + (((int) buffer[1] + 128) * 256) + ((int) buffer[2] + 128);
-                if (!(Arrays.equals(buffer, lastMessageNotice))) {
-                    if (arrayIndex < aggregatedBuffer.length) {
-                        storeByteInArray(buffer);
-                    }
-//                    else {
-//                        printOutBytesArrayAsInts(buffer);
-//                        Log.d("asdf mobile", "current readCounter is: " + String.valueOf(readCounter));
-//                        Log.d("asdf mobile", "current arrayIndex is: " + String.valueOf(arrayIndex));
-//                        Log.d("asdf mobile", "for some reason, the received message was not able to be processed");
-//                    }
-                } else {
-//                    Log.d("asdf mobile", "in else");
-                    final byte[] emptyByteArray = new byte[20];
-//                    byte[] byteArrayToSend = new byte[20];
-//                    boolean thereAreMissingPackets = false;
-//                    try {
-//                        write("aaaaaaaaaaaaaaaaaaaa".getBytes());
-//                    } catch (IOException e) {
-//                    } catch (InterruptedException e) {
-//                    }
-                    int counter = 0;
-                    //Log.d("asdf mobile", "the following packets did not get through");
+            }
+            if (!waitingForCommand) {
+                if (Arrays.equals(buffer, lastMessageNotice)) {
+
+                    final byte[] emptyByteArray = new byte[18];
+
+                    write(clearBuffer);
+
+                    ArrayList<Integer> intsOfMissingPackets = new ArrayList<>();
                     for (int x = 0; x < aggregatedBuffer.length; x++) {
                         if (Arrays.equals(aggregatedBuffer[x], emptyByteArray)) {
-                            counter++;
-                            Log.d("asdf mobile", String.valueOf(x));
+                            intsOfMissingPackets.add(x);
                         }
                     }
-//                            String numberAsStringToSend = String.valueOf(x);
-//                            for (int y = 0; y < 20; y++) {
-//                                if (y < numberAsStringToSend.length()) {
-//                                    byteArrayToSend[y] = (byte) numberAsStringToSend.charAt(y);
-//                                } else {
-//                                    byteArrayToSend[y] = (byte) 'a';
-//                                }
-//                            }
-//                            try {
-//                                write(byteArrayToSend);
-//                                printOutBytesArray(byteArrayToSend);
-//                            } catch (IOException e) {
-//                            } catch (InterruptedException e) {
-//                            }
-//                            thereAreMissingPackets = true;
-//                        }
-//                    }
-//                    Log.d("asdf mobile", "sent out the needed missing packets");
-//                    try {
-//                        write(lastMessageNotice);
-//                    } catch (IOException e) {
-//                    } catch (InterruptedException e) {
-//                    }
-//                    if (oneResendAlready){
-                    Log.d("asdf mobile", String.valueOf(counter * 100 / (double) aggregatedBuffer.length) + "% of the packets did not get through");
-                    showPicture(aggregatedBuffer);
-                    break;
-                    // }
-                    // oneResendAlready = true;
-//                }
+
+                    if (intsOfMissingPackets.size() == 0){
+                        write(noMissingPacketsNotice);
+                        waitingForCommand = true;
+                        break;
+                    } else {
+                        Log.d("asdf mobile", "the following packets wree not received:");
+                        ArrayList<byte[]> byteArrayPacketsOfMissingPackets = new ArrayList<>();
+                        for (int mInt : intsOfMissingPackets){
+                            Log.d("asdf mobile", "packet: " + String.valueOf(mInt));
+                            byteArrayPacketsOfMissingPackets.add(putIntsInFilledBuffer(mInt));
+                        }
+
+                        waitingForCommand = true;
+
+                        Log.d("asdf mobile", String.valueOf(intsOfMissingPackets.size()) + " of " + String.valueOf(aggregatedBuffer.length) + " packets, or " + String.valueOf(intsOfMissingPackets.size() * 100 / (double) aggregatedBuffer.length) + "% did not get through");
+                        write(secondPacketsSendAttemptNotice);
+                        writeWithProgressTracker(byteArrayPacketsOfMissingPackets);
+                    }
+
+                } else {
+//                    Log.d("asdf mobile", "packet number is: " + String.valueOf(headersAndInts(buffer)));
+//                    printOutBytesArrayAsInts(Arrays.copyOfRange(buffer, 0, 2));
+                    try{
+//                        printOutBytesArrayAsInts(Arrays.copyOfRange(buffer, 0, 2));
+//                        Log.d("asdf mobile", "header number is: " + String.valueOf(headersAndInts(buffer)));
+                        storeByteInArray(buffer);
+                    }
+                    catch (Exception e){
+                        //Log.d("asdf mobile", "for some reason coundn't store packet");
+                    }
                 }
             }
         }
+        showPicture();
     }
 
-    private void storeByteInArray(byte[] buffer) {
-        aggregatedBuffer[arrayIndex] = buffer.clone();
+    private void storeByteInArray(byte[] byteArray) {
+        aggregatedBuffer[headersAndInts(byteArray)] = headersAndIntsWithHeaderStripped(byteArray);
     }
 
-    private void showPicture(byte[][] arrayOfByteArrays) {
-        byte[] singleByteArray = new byte[sizeOfIncomingData * 17];
-        int totalBytesCounter = 0;
+    private void showPicture() {
+        byte[] singleByteArray = new byte[aggregatedBuffer.length * 18];
+        int counter = 0;
         for (byte[] byteArray : aggregatedBuffer) {
-            int innerBytesCounter = 0;
             for (byte mByte : byteArray) {
-                if (innerBytesCounter != 0 && innerBytesCounter != 1 && innerBytesCounter != 2) {
-                    singleByteArray[totalBytesCounter] = mByte;
-                    totalBytesCounter++;
-                }
-                innerBytesCounter++;
+                singleByteArray[counter] = mByte;
+                counter++;
             }
         }
-        //Log.d("asdf mobile", "entire byte array: " + new String(singleByteArray));
-        Log.d("asdf mobile", "will now display message");
+
         main.outputMessage(singleByteArray, "image");
+        //main.outputMessage(singleByteArray, "string");
     }
 
+
+    //My secondary methods
     private void printOutBytesArray(byte[] bytes) {
         Log.d("asdf system", "bytes array is: " + new String(bytes));
     }
@@ -210,18 +208,91 @@ public class ConnectedThread extends Thread {
         Log.d("asdf system", "done printing out byte array.");
     }
 
-
-    /* Call this from the main activity to send data to the remote device */
-    public void write(byte[] bytes) throws IOException, InterruptedException {
-        mmOutStream.write(bytes);
-        Thread.sleep((long) 0.1);
+    private int headersAndInts(byte[] byteArray) {
+        final int firstNumber = (((int) byteArray[0] + 128) * 256);
+        final int secondNumber = ((int) byteArray[1] + 128);
+        return firstNumber + secondNumber;
     }
 
-    /* Call this from the main activity to shutdown the connection */
-    public void cancel() {
-        try {
-            mmSocket.close();
-        } catch (IOException e) {
+    private byte[] headersAndIntsWithHeaderStripped(byte[] byteArray) {
+        return Arrays.copyOfRange(byteArray, 2, byteArray.length);
+    }
+
+    private byte[] headersAndInts(int headerInt) {
+        byte[] headerArray = new byte[2];
+        headerArray[0] = (byte) ((byte) (headerInt / 256) - 128);
+        headerArray[1] = (byte) ((byte) (headerInt % 256) - 128);
+        return headerArray;
+    }
+
+    private byte[] headersAndInts(int header, byte[] bytes) {
+        byte[] byteArray = new byte[20];
+        int counter = 0;
+        for (byte mByte : headersAndInts(header)) {
+            byteArray[counter] = mByte;
+            counter++;
         }
+        for (byte mByte : bytes) {
+            byteArray[counter] = mByte;
+            counter++;
+        }
+        return byteArray;
+    }
+
+    private int findIntsInFilledBuffer(byte[] byteArray) {
+        ArrayList<Integer> intsOfArray = new ArrayList<>();
+        for (byte mByte : byteArray) {
+            if ((char) mByte != 'a') {
+                intsOfArray.add(Character.getNumericValue(mByte));
+            } else {
+                break;
+            }
+        }
+
+        int intValueToReurn = 0;
+        for (int mInt : intsOfArray){
+            intValueToReurn *= 10;
+            intValueToReurn += mInt;
+        }
+
+        return intValueToReurn;
+    }
+
+    private byte[] putIntsInFilledBuffer(int intsToPut) {
+        byte[] byteArray = new byte[20];
+        String intAsString = String.valueOf(intsToPut);
+        for (int x = 0; x < 20; x++) {
+            if (x < intAsString.length()) {
+                byteArray[x] = (byte) intAsString.charAt(x);
+            } else {
+                byteArray[x] = (byte) 'a';
+            }
+        }
+        return byteArray;
+    }
+
+    private void writeWithProgressTracker(ArrayList<byte[]> arrayOfBytes) {
+        final long beginTime = System.nanoTime();
+        for (byte[] bytes : arrayOfBytes) {
+            try {
+                mmOutStream.write(bytes);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            try {
+                Thread.sleep((long) 0, 10);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
+        writeFinishedTransmission();
+
+        final double totalTime = ((System.nanoTime() - beginTime) / 1000000.0);
+        Log.d("asdf glass", "transmission finished in " + String.valueOf(totalTime) + " milliseconds");
+    }
+
+    private void writeFinishedTransmission() {
+        write(lastMessageNotice);
     }
 }

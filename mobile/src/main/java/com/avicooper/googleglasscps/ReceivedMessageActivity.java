@@ -1,5 +1,6 @@
 package com.avicooper.googleglasscps;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -37,7 +38,7 @@ public class ReceivedMessageActivity extends ActionBarActivity {
     public void displayStringMessage (byte[] bytes){
         // Create the text view
         TextView textView = new TextView(this);
-        textView.setTextSize(40);
+        textView.setTextSize(10);
         textView.setText(new String(bytes));
 
         // Set the text view as the activity layout
@@ -48,14 +49,12 @@ public class ReceivedMessageActivity extends ActionBarActivity {
 
         // Set the text view as the activity layout
         setContentView(R.layout.activity_received_message);
-        ImageView mImg;
-        mImg = (ImageView) findViewById(R.id.received_image);
+        ImageView mImg = (ImageView) findViewById(R.id.received_image);
         Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
         mImg.setImageBitmap(bitmap);
-        Log.d("asdf mobile", "hello and googbye");
-        int height = bitmap.getHeight();
-        int width = bitmap.getWidth();
-        Log.d("asdf mobile", "the size of the picture is: " + String.valueOf(height) + " by " + String.valueOf(width));
+//        int height = bitmap.getHeight();
+//        int width = bitmap.getWidth();
+//        Log.d("asdf mobile", "the size of the picture is: " + String.valueOf(height) + " by " + String.valueOf(width));
     }
 
     @Override
