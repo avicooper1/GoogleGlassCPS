@@ -1,0 +1,30 @@
+
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:keepScreenOn="true">
+    
+    <SurfaceView android:id="@+id/preview"
+   	android:layout_width="match_parent"
+    android:layout_height="match_parent"/>
+    
+    <ImageView android:id="@+id/image"
+    android:layout_width="match_parent" 
+    android:layout_height="match_parent"
+    android:scaleType="fitCenter"
+    android:adjustViewBounds="true"
+    android:cropToPadding="false" />
+    
+    <TextView android:id="@+id/counter"
+    android:layout_width="wrap_content" 
+    android:layout_height="wrap_content" 
+    android:layout_marginBottom="20dip"
+    android:layout_gravity="top|end"
+    android:padding="12dip"
+    android:textSize="19sp" 
+    android:textStyle="bold" 
+    android:textColor="#AA000000" 
+    android:background="#FFFFFF"/>
+         
+</FrameLayout>
+ 

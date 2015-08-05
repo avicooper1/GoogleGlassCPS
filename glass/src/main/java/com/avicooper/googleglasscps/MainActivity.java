@@ -1,36 +1,37 @@
+
 package com.avicooper.googleglasscps;
 
-import android.app.Activity;
-import android.bluetooth.BluetoothAdapter;
-import android.content.ComponentName;
-import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
-import android.hardware.Camera;
-import android.net.Uri;
-import android.os.Bundle;
-import android.os.Environment;
-import android.os.FileObserver;
-import android.provider.MediaStore;
-import android.util.Log;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.AdapterView;
+        import android.app.Activity;
+        import android.bluetooth.BluetoothAdapter;
+        import android.content.ComponentName;
+        import android.content.Intent;
+        import android.graphics.Bitmap;
+        import android.graphics.drawable.BitmapDrawable;
+        import android.graphics.drawable.Drawable;
+        import android.hardware.Camera;
+        import android.net.Uri;
+        import android.os.Bundle;
+        import android.os.Environment;
+        import android.os.FileObserver;
+        import android.provider.MediaStore;
+        import android.util.Log;
+        import android.view.View;
+        import android.view.ViewGroup;
+        import android.widget.AdapterView;
 
-import com.google.android.glass.content.Intents;
-import com.google.android.glass.widget.CardBuilder;
-import com.google.android.glass.widget.CardScrollAdapter;
-import com.google.android.glass.widget.CardScrollView;
+        import com.google.android.glass.content.Intents;
+        import com.google.android.glass.widget.CardBuilder;
+        import com.google.android.glass.widget.CardScrollAdapter;
+        import com.google.android.glass.widget.CardScrollView;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.lang.ref.SoftReference;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+        import java.io.ByteArrayOutputStream;
+        import java.io.File;
+        import java.io.FileNotFoundException;
+        import java.io.FileOutputStream;
+        import java.io.IOException;
+        import java.lang.ref.SoftReference;
+        import java.text.SimpleDateFormat;
+        import java.util.Date;
 
 /**
  * An {@link Activity} showing a tuggable "Hello World!" card.
@@ -107,7 +108,7 @@ public class MainActivity extends Activity {
         if (resultCode == RESULT_OK){
             //BTConnected.largeWrite("Initially Tesla planned to start production by the end of 2013 and for deliveries to commence in 2014.[8] However, in February 2013, the company announced that production had been rescheduled to begin by late 2014 in order to focus \"on a commitment to bring profitability to the company in 2013\" and to achieve its production target of 20,000 Model S cars in 2013.[4][5][9] As of March 2013, Tesla's production target for the Model X was between 10,000 to 15,000 cars a year.[5] The prototype Tesla Model X had no side mirrors, instead having small cameras mounted on each side that displayed on the dashboard, but U.S. safety regulations were not ready, and the cameras were replaced with mirrors.[10][11] In November 2013, Tesla said it expected to deliver the Model X in small numbers by end of 2014, with high volume production planned for the second quarter of 2015.[6] However, Tesla announced in February 2014 that in order to focus on overseas rollouts, the company planned to have production design Model X prototypes by the end of 2014 and would begin high volume deliveries for retail customers in the second quarter of 2015.[12] In November 2014 Tesla again delayed the start of deliveries to retail customers, and announced that Model X deliveries would begin in the third quarter of 2015,[1] while deliveries for new reservations are to begin in early 2016.[13] Among the reasons for delay are problems with the gullwing doors and cooling the motors when hauling trailers.[11]".getBytes());
             String picturePath = data.getStringExtra(Intents.EXTRA_PICTURE_FILE_PATH);
-            processPictureWhenReady(picturePath);
+           processPictureWhenReady(picturePath);
         }
     }
 

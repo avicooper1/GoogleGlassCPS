@@ -59,7 +59,7 @@ public class ConnectThread extends Thread {
         // Do work to manage the connection (in a separate thread)
         Log.d("asdf", "glass will now create Connected object");
         main.BTConnected = new ConnectedThread(mmSocket);
-        main.buildViewWithText("Connection esatblished. Tap to take a picture");
+        //main.buildViewWithText("Connection esatblished. Tap to take a picture");
     }
 
     /** Will cancel an in-progress connection, and close the socket */

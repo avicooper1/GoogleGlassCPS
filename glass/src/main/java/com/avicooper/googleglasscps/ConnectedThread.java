@@ -35,7 +35,8 @@ public class ConnectedThread extends Thread {
         try {
             tmpIn = socket.getInputStream();
             tmpOut = socket.getOutputStream();
-        } catch (IOException e) { }
+        } catch (IOException e) {
+        }
 
         mmInStream = tmpIn;
         mmOutStream = tmpOut;
@@ -59,24 +60,20 @@ public class ConnectedThread extends Thread {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        try {
-            Thread.sleep((long) 0, 100000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
     }
 
     /* Call this from the main activity to shutdown the connection */
     public void cancel() {
         try {
             mmSocket.close();
-        } catch (IOException e) { }
+        } catch (IOException e) {
+        }
     }
-
 
 
     final private byte[] firstMessageHeader = "File size:".getBytes();
     final private byte[] lastMessageNotice = "FinalMessageNotice..".getBytes();
+    final private byte[] intermediateMessageNotice = "IntermediateNotice..".getBytes();
     final private byte[] receivedMessageNotice = "ReceivedMessageCont.".getBytes();
     final private byte[] secondPacketsSendAttemptNotice = "SecondPacketsSend...".getBytes();
     final private byte[] noMissingPacketsNotice = "NoMoreMissingPackets".getBytes();
@@ -86,55 +83,43 @@ public class ConnectedThread extends Thread {
     boolean waitingForCommand = true;
 
 
-
     //My this class methods
-    public void sendString (String stringToSend){
-        if (stringToSend.length() <= 20){
+    public void sendString(String stringToSend) {
+        if (stringToSend.length() <= 20) {
             write(stringToSend.getBytes());
-        }
-        else{
+        } else {
             largeWrite(stringToSend.getBytes());
         }
     }
 
-    public void largeWrite(byte[] bytes){
+    public void largeWrite(byte[] bytes) {
 
-        boolean fileSizeNeedsExtraEndPacket;
+        int amountOfPackets;
 
-        if (bytes.length % 18 == 0){
-            fileSizeNeedsExtraEndPacket = false;
-        }
-        else{
-            fileSizeNeedsExtraEndPacket = true;
-        }
-
-        byte[] fileSizeByteArrayBeginner;
-        if (fileSizeNeedsExtraEndPacket){
-            fileSizeByteArrayBeginner = ("File size:" + String.valueOf(((bytes.length / 18) + 1))).getBytes();
-
-        }
-        else{
-            fileSizeByteArrayBeginner = ("File size:" + String.valueOf((bytes.length / 18))).getBytes();
+        if (bytes.length % 18 == 0) {
+            amountOfPackets = (bytes.length / 18);
+        } else {
+            amountOfPackets = (bytes.length / 18) + 1;
         }
 
-        writeInitialMessage(fileSizeByteArrayBeginner);
+        writeInitialMessage(("File size:" + String.valueOf(amountOfPackets)).getBytes());
 
-        ArrayList<byte[]> aggregatedByteArrays = new ArrayList<>();
-        byte[] tempByteArray = new byte[18];
-        boolean tempBytesArrayStored = true;
+        byte[] aggregatedByteArrays = new byte[(amountOfPackets + 1) * 20];
+        aggregatedByteArrays[0] = ((byte) -128);
+        aggregatedByteArrays[1] = ((byte) -128);
 
-        for (int x = 0; x < bytes.length; x++){
-            tempByteArray[x % 18] = bytes[x];
-            tempBytesArrayStored = false;
-            if (x != 0 && x % 18 == 17){
-                aggregatedByteArrays.add(headersAndInts(x / 18, tempByteArray));
-                tempByteArray = Arrays.copyOfRange(emptyByteArray, 0, 18);
-                tempBytesArrayStored = true;
+        int counter = 2;
+
+        for (int x = 0; x < bytes.length; x++) {
+            aggregatedByteArrays[counter] = bytes[x];
+            counter++;
+            if (x % 18 == 17) {
+                final byte[] currentHeader = headersAndInts((x / 18) + 1);
+                aggregatedByteArrays[counter] = currentHeader[0];
+                counter++;
+                aggregatedByteArrays[counter] = currentHeader[1];
+                counter++;
             }
-        }
-
-        if (!tempBytesArrayStored){
-            aggregatedByteArrays.add(headersAndInts((bytes.length / 18), tempByteArray));
         }
 
         byte[] buffer = new byte[20];  // buffer store for the stream
@@ -162,22 +147,22 @@ public class ConnectedThread extends Thread {
                 break;
             }
 
-            if (waitingForCommand){
-                if(Arrays.equals(buffer, secondPacketsSendAttemptNotice)){
+            if (waitingForCommand) {
+                if (Arrays.equals(buffer, secondPacketsSendAttemptNotice)) {
                     waitingForCommand = false;
                     continue;
-                }
-                else if (Arrays.equals(buffer, noMissingPacketsNotice)){
+                } else if (Arrays.equals(buffer, noMissingPacketsNotice)) {
                     break;
                 }
+
             }
-            if (!waitingForCommand){
+            if (!waitingForCommand) {
                 if (Arrays.equals(buffer, lastMessageNotice)) {
                     waitingForCommand = true;
                     Log.d("asdf glass", "about to send packets again");
                     write(secondPacketsSendAttemptNotice);
-                    for (int intOfArray: arrayOfMissingPackets){
-                        write(aggregatedByteArrays.get(intOfArray));
+                    for (int intOfArray : arrayOfMissingPackets) {
+                        write(Arrays.copyOfRange(aggregatedByteArrays, intOfArray * 20, (intOfArray * 20) + 20));
                     }
                     writeFinishedTransmission();
                 } else {
@@ -185,16 +170,17 @@ public class ConnectedThread extends Thread {
                 }
             }
         }
+        Log.d("asdf glass", "phone should be displaying image now");
     }
 
     //This class methods
-    void writeInitialMessage (byte[] initialMessage){
+    void writeInitialMessage(byte[] initialMessage) {
         byte[] fileSizeByteArray = new byte[20];
-        for (int x = 0; x < initialMessage.length; x++){
+        for (int x = 0; x < initialMessage.length; x++) {
             fileSizeByteArray[x] = initialMessage[x];
         }
 
-        for (int x = initialMessage.length; x < 20; x++){
+        for (int x = initialMessage.length; x < 20; x++) {
             fileSizeByteArray[x] = (byte) 'a';
         }
         printOutBytesArray(fileSizeByteArray);
@@ -284,7 +270,7 @@ public class ConnectedThread extends Thread {
         }
 
         int intValueToReurn = 0;
-        for (int mInt : intsOfArray){
+        for (int mInt : intsOfArray) {
             intValueToReurn *= 10;
             intValueToReurn += mInt;
         }
@@ -305,24 +291,15 @@ public class ConnectedThread extends Thread {
         return byteArray;
     }
 
-    private void writeWithProgressTracker(ArrayList<byte[]> arrayOfBytes) {
-        final long beginTime = System.nanoTime();
-        for (byte[] bytes : arrayOfBytes) {
-            try {
-                mmOutStream.write(bytes);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            try {
-                Thread.sleep((long) 1);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+    private void writeWithProgressTracker(byte[] arrayOfBytes) {
+        final long beginTime = System.currentTimeMillis();
+        for (int x = 0; x < 3; x++) {
+            write(arrayOfBytes);
+            write(intermediateMessageNotice);
         }
-
         writeFinishedTransmission();
 
-        final double totalTime = ((System.nanoTime() - beginTime) / 1000000.0);
+        final double totalTime = ((System.currentTimeMillis() - beginTime) / 1000.0);
         Log.d("asdf glass", "transmission finished in " + String.valueOf(totalTime) + " milliseconds");
     }
 
