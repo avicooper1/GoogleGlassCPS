@@ -79,6 +79,7 @@ public class ConnectedThread extends Thread {
     int sendCycleCounter = 0;
     int packetsAmount;
     boolean waitingForCommand = true;
+    int firstPacketLostCounter = 0;
 
 
     //My this class methods
@@ -92,6 +93,7 @@ public class ConnectedThread extends Thread {
             // Read from the InputStream
             try {
                 mmInStream.read(buffer);
+                printOutBytesArray(buffer);
             } catch (IOException e) {
             }
 
@@ -113,9 +115,11 @@ public class ConnectedThread extends Thread {
                 if (Arrays.equals(buffer, intermediateMessageNotice)) {
                     sendCycleCounter++;
                     Log.d("asdf mobile", "received intermediate message");
-                } else if (Arrays.equals(buffer, lastMessageNotice)) {
-
+                }
+                if (Arrays.equals(buffer, lastMessageNotice)) {
                     Log.d("asdf mobile", "received final message");
+
+                    long beginTime = System.nanoTime();
 
                     final byte[] emptyByteArray = new byte[18];
 
@@ -135,6 +139,8 @@ public class ConnectedThread extends Thread {
                     if (intsOfMissingPackets.size() == 0) {
                         write(noMissingPacketsNotice);
                         waitingForCommand = true;
+                        Log.d("asdf mobile", "firstPacketLostCounter: " + String.valueOf(firstPacketLostCounter));
+                        Log.d("asdf mobile", "the total check time was: " + String.valueOf((System.nanoTime() - beginTime) / 1000000.0) + " ms.");
                         showPicture();
                     } else {
                         Log.d("asdf mobile", "the following packets were not received:");
@@ -146,6 +152,7 @@ public class ConnectedThread extends Thread {
 
                         waitingForCommand = true;
 
+                        Log.d("asdf mobile", "firstPacketLostCounter: " + String.valueOf(firstPacketLostCounter));
                         Log.d("asdf mobile", String.valueOf(intsOfMissingPackets.size()) + " of " + String.valueOf(packetsAmount) + " packets, or " + String.valueOf(intsOfMissingPackets.size() * 100 / (double) packetsAmount) + "% did not get through");
                         write(secondPacketsSendAttemptNotice);
                         writeWithProgressTracker(byteArrayPacketsOfMissingPackets);
@@ -163,6 +170,7 @@ public class ConnectedThread extends Thread {
 
     private void storeByteInArray(byte[] byteArray) {
         aggregatedBuffer[sendCycleCounter % 3][headersAndInts(byteArray)] = headersAndIntsWithHeaderStripped(byteArray);
+        //finalizedBuffer[headersAndInts(byteArray)] = headersAndIntsWithHeaderStripped(byteArray);
     }
 
     private boolean findCorrectPacket(int header) {
@@ -171,6 +179,7 @@ public class ConnectedThread extends Thread {
             return true;
         } else if (Arrays.equals(aggregatedBuffer[1][header], aggregatedBuffer[2][header])) {
             finalizedBuffer[header] = aggregatedBuffer[1][header].clone();
+            firstPacketLostCounter++;
             return true;
         } else {
             return false;

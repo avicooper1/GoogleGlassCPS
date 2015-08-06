@@ -72,8 +72,10 @@ public class ConnectedThread extends Thread {
 
 
     final private byte[] firstMessageHeader = "File size:".getBytes();
-    final private byte[] lastMessageNotice = "FinalMessageNotice..".getBytes();
+    final private byte[] finalMessageNotice = "FinalMessageNotice..".getBytes();
     final private byte[] intermediateMessageNotice = "IntermediateNotice..".getBytes();
+    final private byte[] intermediateMessageThreeTimes = "IntermediateNotice..IntermediateNotice..IntermediateNotice..".getBytes();
+    final private byte[] finalMessageNoticeThreeTimes = "FinalMessageNotice..FinalMessageNotice..FinalMessageNotice..".getBytes();
     final private byte[] receivedMessageNotice = "ReceivedMessageCont.".getBytes();
     final private byte[] secondPacketsSendAttemptNotice = "SecondPacketsSend...".getBytes();
     final private byte[] noMissingPacketsNotice = "NoMoreMissingPackets".getBytes();
@@ -104,7 +106,7 @@ public class ConnectedThread extends Thread {
 
         writeInitialMessage(("File size:" + String.valueOf(amountOfPackets)).getBytes());
 
-        byte[] aggregatedByteArrays = new byte[(amountOfPackets + 1) * 20];
+        byte[] aggregatedByteArrays = new byte[((amountOfPackets + 1) * 20) + intermediateMessageNotice.length];
         aggregatedByteArrays[0] = ((byte) -128);
         aggregatedByteArrays[1] = ((byte) -128);
 
@@ -122,6 +124,15 @@ public class ConnectedThread extends Thread {
             }
         }
 
+        System.arraycopy(intermediateMessageNotice, 0, aggregatedByteArrays, ((amountOfPackets + 1) * 20), intermediateMessageNotice.length);
+
+        byte[] finalizedByteArray = new byte[(aggregatedByteArrays.length * 3) + finalMessageNotice.length];
+
+        for (int x = 0; x < 3; x++){
+           System.arraycopy(aggregatedByteArrays, 0, finalizedByteArray, x * aggregatedByteArrays.length, aggregatedByteArrays.length);
+        }
+        System.arraycopy(finalMessageNotice, 0, finalizedByteArray, 3 * aggregatedByteArrays.length, finalMessageNotice.length);
+
         byte[] buffer = new byte[20];  // buffer store for the stream
 
         while (true) {
@@ -136,7 +147,7 @@ public class ConnectedThread extends Thread {
             }
         }
 
-        writeWithProgressTracker(aggregatedByteArrays);
+        writeWithProgressTracker(finalizedByteArray);
 
         ArrayList<Integer> arrayOfMissingPackets = new ArrayList<Integer>();
         while (true) {
@@ -157,7 +168,7 @@ public class ConnectedThread extends Thread {
 
             }
             if (!waitingForCommand) {
-                if (Arrays.equals(buffer, lastMessageNotice)) {
+                if (Arrays.equals(buffer, finalMessageNotice)) {
                     waitingForCommand = true;
                     Log.d("asdf glass", "about to send packets again");
                     write(secondPacketsSendAttemptNotice);
@@ -293,17 +304,13 @@ public class ConnectedThread extends Thread {
 
     private void writeWithProgressTracker(byte[] arrayOfBytes) {
         final long beginTime = System.currentTimeMillis();
-        for (int x = 0; x < 3; x++) {
-            write(arrayOfBytes);
-            write(intermediateMessageNotice);
-        }
-        writeFinishedTransmission();
-
-        final double totalTime = ((System.currentTimeMillis() - beginTime) / 1000.0);
+        write(arrayOfBytes);
+        final double totalTime = (System.currentTimeMillis() - beginTime);
         Log.d("asdf glass", "transmission finished in " + String.valueOf(totalTime) + " milliseconds");
     }
 
     private void writeFinishedTransmission() {
-        write(lastMessageNotice);
+        write(finalMessageNotice);
     }
+    private void writeFinishedTransmissionThreeTimes() { write(finalMessageNoticeThreeTimes); }
 }
