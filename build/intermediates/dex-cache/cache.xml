@@ -2,20 +2,6 @@
 <items version="2" >
 
     <item
-        jar="/Users/avicooper-Summer2015/Google Drive/Summer 2015/GoogleGlassCPS/mobile/build/intermediates/exploded-aar/com.android.support/support-v4/22.2.0/jars/classes.jar"
-        jumboMode="false"
-        revision="22.0.1"
-        sha1="1ee588ff2c4daf7b97c1cbf922a6c7f027285c2f">
-        <dex dex="/Users/avicooper-Summer2015/Google Drive/Summer 2015/GoogleGlassCPS/mobile/build/intermediates/pre-dexed/debug/classes-55850741b455af3d783b54320eac3f05f85f18a5.jar" />
-    </item>
-    <item
-        jar="/Users/avicooper-Summer2015/Google Drive/Summer 2015/GoogleGlassCPS/mobile/build/intermediates/exploded-aar/com.android.support/support-v4/22.2.0/jars/libs/internal_impl-22.2.0.jar"
-        jumboMode="false"
-        revision="22.0.1"
-        sha1="57f2ab85c164ff1676ec64dee787981c046fab79">
-        <dex dex="/Users/avicooper-Summer2015/Google Drive/Summer 2015/GoogleGlassCPS/mobile/build/intermediates/pre-dexed/debug/internal_impl-22.2.0-5337992e5157fde44b0da5e96b6df9ca95433f0f.jar" />
-    </item>
-    <item
         jar="/Users/avicooper-Summer2015/Google Drive/Summer 2015/GoogleGlassCPS/mobile/build/intermediates/exploded-aar/com.android.support/appcompat-v7/22.2.0/jars/classes.jar"
         jumboMode="false"
         revision="22.0.1"
@@ -28,6 +14,27 @@
         revision="22.0.1"
         sha1="66b42a1f3eb7676070b7ef7f14b603483aecbee1">
         <dex dex="/Users/avicooper-Summer2015/Google Drive/Summer 2015/GoogleGlassCPS/mobile/build/intermediates/pre-dexed/debug/support-annotations-22.2.0-d86df9e5fbcd03635fc5ce2b85d169e30d126ac7.jar" />
+    </item>
+    <item
+        jar="/Users/avicooper-Summer2015/Google Drive/Summer 2015/GoogleGlassCPS/mobile/build/intermediates/exploded-aar/com.android.support/support-v4/22.2.0/jars/classes.jar"
+        jumboMode="false"
+        revision="22.0.1"
+        sha1="1ee588ff2c4daf7b97c1cbf922a6c7f027285c2f">
+        <dex dex="/Users/avicooper-Summer2015/Google Drive/Summer 2015/GoogleGlassCPS/mobile/build/intermediates/pre-dexed/debug/classes-55850741b455af3d783b54320eac3f05f85f18a5.jar" />
+    </item>
+    <item
+        jar="/Users/avicooper-Summer2015/Google Drive/Summer 2015/GoogleGlassCPS/mobile/libs/jmfapi.jar"
+        jumboMode="false"
+        revision="22.0.1"
+        sha1="0e9eb5e4c357daf54165e71bf9b7391246959426">
+        <dex dex="/Users/avicooper-Summer2015/Google Drive/Summer 2015/GoogleGlassCPS/mobile/build/intermediates/pre-dexed/debug/jmfapi-9df34b49a4abd132200a2b2b3f5222aef35107d3.jar" />
+    </item>
+    <item
+        jar="/Users/avicooper-Summer2015/Google Drive/Summer 2015/GoogleGlassCPS/mobile/build/intermediates/exploded-aar/com.android.support/support-v4/22.2.0/jars/libs/internal_impl-22.2.0.jar"
+        jumboMode="false"
+        revision="22.0.1"
+        sha1="57f2ab85c164ff1676ec64dee787981c046fab79">
+        <dex dex="/Users/avicooper-Summer2015/Google Drive/Summer 2015/GoogleGlassCPS/mobile/build/intermediates/pre-dexed/debug/internal_impl-22.2.0-5337992e5157fde44b0da5e96b6df9ca95433f0f.jar" />
     </item>
 
 </items>

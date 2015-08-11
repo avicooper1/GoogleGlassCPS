@@ -9,9 +9,10 @@ import java.io.IOException;
 import java.util.UUID;
 
 public class AcceptThread extends Thread {
-    private final BluetoothServerSocket mmServerSocket;
+    public final BluetoothServerSocket mmServerSocket;
     BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
     private final MainActivity main;
+    public BluetoothSocket socket;
 
     public AcceptThread(MainActivity activityPassedIn) {
         Log.d("asdf mobile", "began Accept init");
@@ -31,7 +32,6 @@ public class AcceptThread extends Thread {
     }
 
     public void run() {
-        BluetoothSocket socket = null;
         // Keep listening until exception occurs or a socket is returned
         while (true) {
             try {

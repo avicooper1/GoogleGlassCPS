@@ -31,7 +31,9 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         Log.d("asdf", "began main");
         setContentView(R.layout.activity_main);
-        mImg = (ImageView) findViewById(R.id.received_image);
+        //BTConnected = new ConnectedThread();
+
+//        mImg = (ImageView) findViewById(R.id.received_image);
 //        Log.d("asdf mobile", "starting array allocation");
 //        long beginTime = System.nanoTime();
 //        byte[][] testArray = new byte[10][20];

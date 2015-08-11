@@ -83,6 +83,7 @@ public class ConnectedThread extends Thread {
     final private byte[] emptyByteArray = new byte[20];
     byte[][] aggregatedBuffer;
     boolean waitingForCommand = true;
+    public boolean ready = true;
 
 
     //My this class methods
@@ -94,94 +95,104 @@ public class ConnectedThread extends Thread {
         }
     }
 
-    public void largeWrite(byte[] bytes) {
+    public void largeWrite(final byte[] bytes) {
 
-        int amountOfPackets;
+        Thread t = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                ready = false;
+                int amountOfPackets;
 
-        if (bytes.length % 18 == 0) {
-            amountOfPackets = (bytes.length / 18);
-        } else {
-            amountOfPackets = (bytes.length / 18) + 1;
-        }
-
-        writeInitialMessage(("File size:" + String.valueOf(amountOfPackets)).getBytes());
-
-        byte[] aggregatedByteArrays = new byte[((amountOfPackets + 1) * 20) + intermediateMessageNotice.length];
-        aggregatedByteArrays[0] = ((byte) -128);
-        aggregatedByteArrays[1] = ((byte) -128);
-
-        int counter = 2;
-
-        for (int x = 0; x < bytes.length; x++) {
-            aggregatedByteArrays[counter] = bytes[x];
-            counter++;
-            if (x % 18 == 17) {
-                final byte[] currentHeader = headersAndInts((x / 18) + 1);
-                aggregatedByteArrays[counter] = currentHeader[0];
-                counter++;
-                aggregatedByteArrays[counter] = currentHeader[1];
-                counter++;
-            }
-        }
-
-        System.arraycopy(intermediateMessageNotice, 0, aggregatedByteArrays, ((amountOfPackets + 1) * 20), intermediateMessageNotice.length);
-
-        byte[] finalizedByteArray = new byte[(aggregatedByteArrays.length * 3) + finalMessageNotice.length];
-
-        for (int x = 0; x < 3; x++){
-           System.arraycopy(aggregatedByteArrays, 0, finalizedByteArray, x * aggregatedByteArrays.length, aggregatedByteArrays.length);
-        }
-        System.arraycopy(finalMessageNotice, 0, finalizedByteArray, 3 * aggregatedByteArrays.length, finalMessageNotice.length);
-
-        byte[] buffer = new byte[20];  // buffer store for the stream
-
-        while (true) {
-            try {
-                mmInStream.read(buffer);
-                if (Arrays.equals(buffer, receivedMessageNotice)) {
-                    break;
-                }
-            } catch (IOException e) {
-                Log.d("asdf glass", "could not receive confirmation that server received size message.");
-                return;
-            }
-        }
-
-        writeWithProgressTracker(finalizedByteArray);
-
-        ArrayList<Integer> arrayOfMissingPackets = new ArrayList<Integer>();
-        while (true) {
-            try {
-                mmInStream.read(buffer);
-            } catch (IOException e) {
-                Log.d("asdf glass", "not getting any message about lost bytes");
-                break;
-            }
-
-            if (waitingForCommand) {
-                if (Arrays.equals(buffer, secondPacketsSendAttemptNotice)) {
-                    waitingForCommand = false;
-                    continue;
-                } else if (Arrays.equals(buffer, noMissingPacketsNotice)) {
-                    break;
-                }
-
-            }
-            if (!waitingForCommand) {
-                if (Arrays.equals(buffer, finalMessageNotice)) {
-                    waitingForCommand = true;
-                    Log.d("asdf glass", "about to send packets again");
-                    write(secondPacketsSendAttemptNotice);
-                    for (int intOfArray : arrayOfMissingPackets) {
-                        write(Arrays.copyOfRange(aggregatedByteArrays, intOfArray * 20, (intOfArray * 20) + 20));
-                    }
-                    writeFinishedTransmission();
+                if (bytes.length % 18 == 0) {
+                    amountOfPackets = (bytes.length / 18);
                 } else {
-                    arrayOfMissingPackets.add(findIntsInFilledBuffer(buffer));
+                    amountOfPackets = (bytes.length / 18) + 1;
                 }
+
+                writeInitialMessage(("File size:" + String.valueOf(amountOfPackets)).getBytes());
+
+                byte[] aggregatedByteArrays = new byte[((amountOfPackets + 1) * 20) + intermediateMessageNotice.length];
+                aggregatedByteArrays[0] = ((byte) -128);
+                aggregatedByteArrays[1] = ((byte) -128);
+
+                int counter = 2;
+
+                for (int x = 0; x < bytes.length; x++) {
+                    aggregatedByteArrays[counter] = bytes[x];
+                    counter++;
+                    if (x % 18 == 17) {
+                        final byte[] currentHeader = headersAndInts((x / 18) + 1);
+                        aggregatedByteArrays[counter] = currentHeader[0];
+                        counter++;
+                        aggregatedByteArrays[counter] = currentHeader[1];
+                        counter++;
+                    }
+                }
+
+                System.arraycopy(intermediateMessageNotice, 0, aggregatedByteArrays, ((amountOfPackets + 1) * 20), intermediateMessageNotice.length);
+
+                byte[] finalizedByteArray = new byte[(aggregatedByteArrays.length * 3) + finalMessageNotice.length];
+
+                for (int x = 0; x < 3; x++){
+                    System.arraycopy(aggregatedByteArrays, 0, finalizedByteArray, x * aggregatedByteArrays.length, aggregatedByteArrays.length);
+                }
+                System.arraycopy(finalMessageNotice, 0, finalizedByteArray, 3 * aggregatedByteArrays.length, finalMessageNotice.length);
+
+                byte[] buffer = new byte[20];  // buffer store for the stream
+
+                while (true) {
+                    try {
+                        mmInStream.read(buffer);
+                        if (Arrays.equals(buffer, receivedMessageNotice)) {
+                            break;
+                        }
+                    } catch (IOException e) {
+                        Log.d("asdf glass", "could not receive confirmation that server received size message.");
+                        return;
+                    }
+                }
+
+                //writeWithProgressTracker(aggregatedByteArrays);
+                writeWithProgressTracker(finalizedByteArray);
+
+                ArrayList<Integer> arrayOfMissingPackets = new ArrayList<Integer>();
+                while (true) {
+                    try {
+                        mmInStream.read(buffer);
+                    } catch (IOException e) {
+                        Log.d("asdf glass", "not getting any message about lost bytes");
+                        break;
+                    }
+
+                    if (waitingForCommand) {
+                        if (Arrays.equals(buffer, secondPacketsSendAttemptNotice)) {
+                            waitingForCommand = false;
+                            continue;
+                        } else if (Arrays.equals(buffer, noMissingPacketsNotice)) {
+                            break;
+                        }
+
+                    }
+                    if (!waitingForCommand) {
+                        if (Arrays.equals(buffer, finalMessageNotice)) {
+                            waitingForCommand = true;
+                            Log.d("asdf glass", "about to send packets again");
+                            write(secondPacketsSendAttemptNotice);
+                            for (int intOfArray : arrayOfMissingPackets) {
+                                Log.d("asdf glass", "packet: " + String.valueOf(intOfArray));
+                                write(Arrays.copyOfRange(aggregatedByteArrays, intOfArray * 20, (intOfArray * 20) + 20));
+                            }
+                            writeFinishedTransmission();
+                        } else {
+                            arrayOfMissingPackets.add(findIntsInFilledBuffer(buffer));
+                        }
+                    }
+                }
+                Log.d("asdf glass", "phone should be displaying image now");
+                ready = true;
             }
-        }
-        Log.d("asdf glass", "phone should be displaying image now");
+        });
+        t.start();
     }
 
     //This class methods

@@ -12,6 +12,7 @@ public class ConnectThread extends Thread {
     private final BluetoothDevice mmDevice;
     BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
     private final MainActivity main;
+    public boolean connected = false;
 
     public ConnectThread(BluetoothDevice device, MainActivity mainBeingPassedIn) {
         // Use a temporary object that is later assigned to mmSocket,
@@ -46,6 +47,7 @@ public class ConnectThread extends Thread {
             // until it succeeds or throws an exception
             Log.d("asdf", "glass is socketed");
             mmSocket.connect();
+            connected = true;
         } catch (IOException connectException) {
             Log.d("asdf", "glass could not socket");
             Log.d("asdf", connectException.toString());
@@ -59,7 +61,6 @@ public class ConnectThread extends Thread {
         // Do work to manage the connection (in a separate thread)
         Log.d("asdf", "glass will now create Connected object");
         main.BTConnected = new ConnectedThread(mmSocket);
-        //main.buildViewWithText("Connection esatblished. Tap to take a picture");
     }
 
     /** Will cancel an in-progress connection, and close the socket */

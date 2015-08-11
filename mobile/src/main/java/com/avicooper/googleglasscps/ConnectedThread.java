@@ -14,10 +14,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 public class ConnectedThread extends Thread {
-    private final BluetoothSocket mmSocket;
-    private final InputStream mmInStream;
-    private final OutputStream mmOutStream;
+    private BluetoothSocket mmSocket;
+    private InputStream mmInStream;
+    private OutputStream mmOutStream;
     private MainActivity main;
+    private final JClient client = new JClient(101, 102, true);
+    private int returnInt = 0;
+    private boolean connectedToMFServerNode = false;
 
     public ConnectedThread(BluetoothSocket socket, MainActivity mainPassedIn) {
         mmSocket = socket;
@@ -40,6 +43,19 @@ public class ConnectedThread extends Thread {
         mmInStream = tmpIn;
         mmOutStream = tmpOut;
         start();
+        try{
+            Thread t = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    client.start();
+                    connectedToMFServerNode = true;
+                }
+            });
+            t.start();
+        }
+        catch (Exception e){
+            Log.d("asdf mobile", "MF .start() failed");
+        }
     }
 
     //Class methods
@@ -59,12 +75,12 @@ public class ConnectedThread extends Thread {
     }
 
     /* Call this from the main activity to shutdown the connection */
-    public void cancel() {
-        try {
-            mmSocket.close();
-        } catch (IOException e) {
-        }
-    }
+//    public void cancel() {
+//        try {
+//            mmSocket.close();
+//        } catch (IOException e) {
+//        }
+//    }
 
 
     final private byte[] firstMessageHeader = "File size:".getBytes();
@@ -74,12 +90,12 @@ public class ConnectedThread extends Thread {
     final private byte[] secondPacketsSendAttemptNotice = "SecondPacketsSend...".getBytes();
     final private byte[] noMissingPacketsNotice = "NoMoreMissingPackets".getBytes();
     final private byte[] clearBuffer = "aaaaaaaaaaaaaaaaaaaa".getBytes();
+    final byte[] emptyByteArray = new byte[18];
     byte[][][] aggregatedBuffer;
     byte[][] finalizedBuffer;
     int sendCycleCounter = 0;
     int packetsAmount;
     boolean waitingForCommand = true;
-    int firstPacketLostCounter = 0;
 
 
     //My this class methods
@@ -93,13 +109,20 @@ public class ConnectedThread extends Thread {
             // Read from the InputStream
             try {
                 mmInStream.read(buffer);
-                printOutBytesArray(buffer);
+                //printOutBytesArray(buffer);
+                Log.d("buffer mobile", new String(buffer));
             } catch (IOException e) {
             }
 
             if (waitingForCommand) {
                 if (Arrays.equals(Arrays.copyOfRange(buffer, 0, 10), firstMessageHeader)) {
                     packetsAmount = findIntsInFilledBuffer(Arrays.copyOfRange(buffer, 10, buffer.length));
+                    //resetting all variables for new message
+                    aggregatedBuffer = null;
+                    finalizedBuffer = null;
+                    sendCycleCounter = 0;
+
+
                     aggregatedBuffer = new byte[3][packetsAmount][18];
                     finalizedBuffer = new byte[packetsAmount][18];
                     waitingForCommand = false;
@@ -121,25 +144,22 @@ public class ConnectedThread extends Thread {
 
                     long beginTime = System.nanoTime();
 
-                    final byte[] emptyByteArray = new byte[18];
-
                     sendCycleCounter++;
 
                     write(clearBuffer);
 
                     ArrayList<Integer> intsOfMissingPackets = new ArrayList<>();
                     for (int x = 0; x < packetsAmount; x++) {
-                        if (Arrays.equals(finalizedBuffer[x], emptyByteArray)) {
-                            if (!findCorrectPacket(x)) {
+                        //if (Arrays.equals(finalizedBuffer[x], emptyByteArray)) {
+                            if (!findCorrectPacket(x, 0, 1)) {
                                 intsOfMissingPackets.add(x);
-                            }
+                          //  }
                         }
                     }
 
                     if (intsOfMissingPackets.size() == 0) {
                         write(noMissingPacketsNotice);
                         waitingForCommand = true;
-                        Log.d("asdf mobile", "firstPacketLostCounter: " + String.valueOf(firstPacketLostCounter));
                         Log.d("asdf mobile", "the total check time was: " + String.valueOf((System.nanoTime() - beginTime) / 1000000.0) + " ms.");
                         showPicture();
                     } else {
@@ -152,7 +172,6 @@ public class ConnectedThread extends Thread {
 
                         waitingForCommand = true;
 
-                        Log.d("asdf mobile", "firstPacketLostCounter: " + String.valueOf(firstPacketLostCounter));
                         Log.d("asdf mobile", String.valueOf(intsOfMissingPackets.size()) + " of " + String.valueOf(packetsAmount) + " packets, or " + String.valueOf(intsOfMissingPackets.size() * 100 / (double) packetsAmount) + "% did not get through");
                         write(secondPacketsSendAttemptNotice);
                         writeWithProgressTracker(byteArrayPacketsOfMissingPackets);
@@ -173,16 +192,18 @@ public class ConnectedThread extends Thread {
         //finalizedBuffer[headersAndInts(byteArray)] = headersAndIntsWithHeaderStripped(byteArray);
     }
 
-    private boolean findCorrectPacket(int header) {
-        if (Arrays.equals(aggregatedBuffer[0][header], aggregatedBuffer[1][header]) || Arrays.equals(aggregatedBuffer[0][header], aggregatedBuffer[2][header])) {
-            finalizedBuffer[header] = aggregatedBuffer[0][header].clone();
-            return true;
-        } else if (Arrays.equals(aggregatedBuffer[1][header], aggregatedBuffer[2][header])) {
-            finalizedBuffer[header] = aggregatedBuffer[1][header].clone();
-            firstPacketLostCounter++;
-            return true;
-        } else {
+    private boolean findCorrectPacket(int header, int checkSendCount1, int checkSendCount2) {
+        if (checkSendCount2 == 3){
             return false;
+        }
+
+        if (Arrays.equals(aggregatedBuffer[checkSendCount1][header], aggregatedBuffer[checkSendCount2][header]) && !Arrays.equals(aggregatedBuffer[checkSendCount1][header], emptyByteArray)){
+            finalizedBuffer[header] = aggregatedBuffer[checkSendCount1][header].clone();
+            return true;
+        }
+        else{
+            Log.d("asdf mobile", "didnt get first packet");
+            return findCorrectPacket(header, checkSendCount2, checkSendCount2 + 1);
         }
     }
 
@@ -193,6 +214,13 @@ public class ConnectedThread extends Thread {
             for (byte mByte : byteArray) {
                 singleByteArray[counter] = mByte;
                 counter++;
+            }
+        }
+
+        if (connectedToMFServerNode){
+            returnInt = client.sendImage(singleByteArray, singleByteArray.length);
+            if (returnInt < 0) {
+                Log.d("asdf mobile", "MF client send failed");
             }
         }
 
