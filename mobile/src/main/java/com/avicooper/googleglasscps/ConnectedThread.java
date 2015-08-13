@@ -97,6 +97,7 @@ public class ConnectedThread extends Thread {
     byte[][][] aggregatedBuffer;
     byte[][] finalizedBuffer;
     int sendCycleCounter = 0;
+    int finishedCycleCounter = 100;
     int packetsAmount = 100;
     boolean waitingForCommand = true;
     int readCounter = 0;
@@ -114,7 +115,7 @@ public class ConnectedThread extends Thread {
             try {
                 mmInStream.read(buffer);
                 readCounter++;
-                printOutBytesArray(buffer);
+                Log.d("buffer", new String(buffer));
                 if (readCounter > packetsAmount * 2) {
                     write(noMissingPacketsNotice);
                     waitingForCommand = true;
@@ -145,50 +146,54 @@ public class ConnectedThread extends Thread {
                 }
             }
             if (!waitingForCommand) {
-                if (Arrays.equals(buffer, intermediateMessageNotice)) {
-                    sendCycleCounter++;
+                if(Arrays.equals(Arrays.copyOfRange(buffer, 0, 18), Arrays.copyOfRange(intermediateMessageNotice, 0, 18))){
+                    sendCycleCounter = (int) buffer[18];
+                    Log.d("asdf glass", "got: " + String.valueOf(sendCycleCounter));
                     Log.d("asdf mobile", "received intermediate message");
                     readCounter = 0;
                 }
-                if (Arrays.equals(buffer, lastMessageNotice)) {
-                    Log.d("asdf mobile", "received final message");
+                else if (Arrays.equals(Arrays.copyOfRange(buffer, 0, 18), Arrays.copyOfRange(lastMessageNotice, 0, 18))) {
+                    if (!(finishedCycleCounter == (int) buffer[18])){
+                        finishedCycleCounter = (int) buffer[18];
+                        Log.d("asdf mobile", "received final message");
 
-                    //long beginTime = System.nanoTime();
+                        //long beginTime = System.nanoTime();
 
-                    sendCycleCounter++;
+                        sendCycleCounter++;
 
-                    write(clearBuffer);
+                        write(clearBuffer);
 
-                    ArrayList<Integer> intsOfMissingPackets = new ArrayList<>();
-                    for (int x = 0; x < packetsAmount; x++) {
-                        //if (Arrays.equals(finalizedBuffer[x], emptyByteArray)) {
-                        if (!findCorrectPacket(x, 0, 1)) {
-                            intsOfMissingPackets.add(x);
-                            //  }
-                        }
-                    }
-
-                    if (intsOfMissingPackets.size() == 0) {
-                        write(noMissingPacketsNotice);
-                        waitingForCommand = true;
-                        //Log.d("asdf mobile", "the total check time was: " + String.valueOf((System.nanoTime() - beginTime) / 1000000.0) + " ms.");
-                        showPicture();
-                    } else if (intsOfMissingPackets.size() > 100) {
-                        write(noMissingPacketsNotice);
-                        waitingForCommand = true;
-                    } else {
-                        Log.d("asdf mobile", "the following packets were not received:");
-                        ArrayList<byte[]> byteArrayPacketsOfMissingPackets = new ArrayList<>();
-                        for (int mInt : intsOfMissingPackets) {
-                            Log.d("asdf mobile", "packet: " + String.valueOf(mInt));
-                            byteArrayPacketsOfMissingPackets.add(putIntsInFilledBuffer(mInt));
+                        ArrayList<Integer> intsOfMissingPackets = new ArrayList<>();
+                        for (int x = 0; x < packetsAmount; x++) {
+                            //if (Arrays.equals(finalizedBuffer[x], emptyByteArray)) {
+                            if (!findCorrectPacket(x, 0, 1)) {
+                                intsOfMissingPackets.add(x);
+                                //  }
+                            }
                         }
 
-                        waitingForCommand = true;
+                        if (intsOfMissingPackets.size() == 0) {
+                            write(noMissingPacketsNotice);
+                            waitingForCommand = true;
+                            //Log.d("asdf mobile", "the total check time was: " + String.valueOf((System.nanoTime() - beginTime) / 1000000.0) + " ms.");
+                            showPicture();
+                        } else if (intsOfMissingPackets.size() > 0) {
+                            write(noMissingPacketsNotice);
+                            waitingForCommand = true;
+                        } else {
+                            Log.d("asdf mobile", "the following packets were not received:");
+                            ArrayList<byte[]> byteArrayPacketsOfMissingPackets = new ArrayList<>();
+                            for (int mInt : intsOfMissingPackets) {
+                                Log.d("asdf mobile", "packet: " + String.valueOf(mInt));
+                                byteArrayPacketsOfMissingPackets.add(putIntsInFilledBuffer(mInt));
+                            }
 
-                        Log.d("asdf mobile", String.valueOf(intsOfMissingPackets.size()) + " of " + String.valueOf(packetsAmount) + " packets, or " + String.valueOf(intsOfMissingPackets.size() * 100 / (double) packetsAmount) + "% did not get through");
-                        write(secondPacketsSendAttemptNotice);
-                        writeWithProgressTracker(byteArrayPacketsOfMissingPackets);
+                            waitingForCommand = true;
+
+                            Log.d("asdf mobile", String.valueOf(intsOfMissingPackets.size()) + " of " + String.valueOf(packetsAmount) + " packets, or " + String.valueOf(intsOfMissingPackets.size() * 100 / (double) packetsAmount) + "% did not get through");
+                            write(secondPacketsSendAttemptNotice);
+                            writeWithProgressTracker(byteArrayPacketsOfMissingPackets);
+                        }
                     }
 
                 } else {

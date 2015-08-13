@@ -74,7 +74,7 @@ public class ConnectedThread extends Thread {
     final private byte[] firstMessageHeader = "File size:".getBytes();
     final private byte[] finalMessageNotice = "FinalMessageNotice..".getBytes();
     final private byte[] intermediateMessageNotice = "IntermediateNotice..".getBytes();
-    final private byte[] intermediateMessageThreeTimes = "IntermediateNotice..IntermediateNotice..IntermediateNotice..".getBytes();
+    final private byte[] intermediateMessageNoticeThreeTimes = "IntermediateNotice..IntermediateNotice..IntermediateNotice..".getBytes();
     final private byte[] finalMessageNoticeThreeTimes = "FinalMessageNotice..FinalMessageNotice..FinalMessageNotice..".getBytes();
     final private byte[] receivedMessageNotice = "ReceivedMessageCont.".getBytes();
     final private byte[] secondPacketsSendAttemptNotice = "SecondPacketsSend...".getBytes();
@@ -84,7 +84,7 @@ public class ConnectedThread extends Thread {
     byte[][] aggregatedBuffer;
     boolean waitingForCommand = true;
     public boolean ready = true;
-
+    public int finishCycleCounter = 0;
 
     //My this class methods
     public void sendString(String stringToSend) {
@@ -111,7 +111,7 @@ public class ConnectedThread extends Thread {
 
                 writeInitialMessage(("File size:" + String.valueOf(amountOfPackets)).getBytes());
 
-                byte[] aggregatedByteArrays = new byte[(amountOfPackets * 20) + intermediateMessageNotice.length];
+                byte[] aggregatedByteArrays = new byte[(amountOfPackets * 20) + intermediateMessageNoticeThreeTimes.length];
                 aggregatedByteArrays[0] = ((byte) -128);
                 aggregatedByteArrays[1] = ((byte) -128);
 
@@ -129,14 +129,20 @@ public class ConnectedThread extends Thread {
                     }
                 }
 
-                System.arraycopy(intermediateMessageNotice, 0, aggregatedByteArrays, aggregatedByteArrays.length - intermediateMessageNotice.length, intermediateMessageNotice.length);
+                System.arraycopy(intermediateMessageNoticeThreeTimes, 0, aggregatedByteArrays, aggregatedByteArrays.length - intermediateMessageNoticeThreeTimes.length, intermediateMessageNoticeThreeTimes.length);
 
-                byte[] finalizedByteArray = new byte[(aggregatedByteArrays.length * 3) + finalMessageNotice.length];
+                byte[] finalizedByteArray = new byte[(aggregatedByteArrays.length * 3) + finalMessageNoticeThreeTimes.length];
 
                 for (int x = 0; x < 3; x++){
+                    aggregatedByteArrays[aggregatedByteArrays.length - 2] = (byte) x;
+                    aggregatedByteArrays[aggregatedByteArrays.length - 22] = (byte) x;
+                    aggregatedByteArrays[aggregatedByteArrays.length - 42] = (byte) x;
                     System.arraycopy(aggregatedByteArrays, 0, finalizedByteArray, x * aggregatedByteArrays.length, aggregatedByteArrays.length);
                 }
-                System.arraycopy(finalMessageNotice, 0, finalizedByteArray, finalizedByteArray.length - finalMessageNotice.length, finalMessageNotice.length);
+                System.arraycopy(finalMessageNoticeThreeTimes, 0, finalizedByteArray, finalizedByteArray.length - finalMessageNoticeThreeTimes.length, finalMessageNoticeThreeTimes.length);
+                finalizedByteArray[finalizedByteArray.length - 2] = (byte) finishCycleCounter;
+                finalizedByteArray[finalizedByteArray.length - 22] = (byte) finishCycleCounter;
+                finalizedByteArray[finalizedByteArray.length - 42] = (byte) finishCycleCounter;
 
                 byte[] buffer = new byte[20];  // buffer store for the stream
 
