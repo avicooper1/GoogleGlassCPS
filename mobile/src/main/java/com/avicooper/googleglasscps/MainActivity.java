@@ -31,15 +31,7 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         Log.d("asdf", "began main");
         setContentView(R.layout.activity_main);
-        //BTConnected = new ConnectedThread();
 
-//        mImg = (ImageView) findViewById(R.id.received_image);
-//        Log.d("asdf mobile", "starting array allocation");
-//        long beginTime = System.nanoTime();
-//        byte[][] testArray = new byte[10][20];
-//        long endTime = System.nanoTime();
-//        Log.d("asdf mobile", "finished allocation with time: " + String.valueOf((endTime - beginTime) / 1000000.0) + "" +
-//                " ms.");
     }
 
     @Override
@@ -57,7 +49,6 @@ public class MainActivity extends Activity {
         int id = item.getItemId();
 
         Drawable drawable = getResources().getDrawable(R.drawable.forest);
-        Log.d("asdf mobile", "should be displaying received message");
         Bitmap bitmap = ((BitmapDrawable) drawable).getBitmap();
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         bitmap.compress(Bitmap.CompressFormat.JPEG, 0, stream);

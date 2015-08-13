@@ -111,7 +111,7 @@ public class ConnectedThread extends Thread {
 
                 writeInitialMessage(("File size:" + String.valueOf(amountOfPackets)).getBytes());
 
-                byte[] aggregatedByteArrays = new byte[((amountOfPackets + 1) * 20) + intermediateMessageNotice.length];
+                byte[] aggregatedByteArrays = new byte[(amountOfPackets * 20) + intermediateMessageNotice.length];
                 aggregatedByteArrays[0] = ((byte) -128);
                 aggregatedByteArrays[1] = ((byte) -128);
 
@@ -129,14 +129,14 @@ public class ConnectedThread extends Thread {
                     }
                 }
 
-                System.arraycopy(intermediateMessageNotice, 0, aggregatedByteArrays, ((amountOfPackets + 1) * 20), intermediateMessageNotice.length);
+                System.arraycopy(intermediateMessageNotice, 0, aggregatedByteArrays, aggregatedByteArrays.length - intermediateMessageNotice.length, intermediateMessageNotice.length);
 
                 byte[] finalizedByteArray = new byte[(aggregatedByteArrays.length * 3) + finalMessageNotice.length];
 
                 for (int x = 0; x < 3; x++){
                     System.arraycopy(aggregatedByteArrays, 0, finalizedByteArray, x * aggregatedByteArrays.length, aggregatedByteArrays.length);
                 }
-                System.arraycopy(finalMessageNotice, 0, finalizedByteArray, 3 * aggregatedByteArrays.length, finalMessageNotice.length);
+                System.arraycopy(finalMessageNotice, 0, finalizedByteArray, finalizedByteArray.length - finalMessageNotice.length, finalMessageNotice.length);
 
                 byte[] buffer = new byte[20];  // buffer store for the stream
 
@@ -153,6 +153,7 @@ public class ConnectedThread extends Thread {
                 }
 
                 //writeWithProgressTracker(aggregatedByteArrays);
+                printOutBytesArray(finalizedByteArray);
                 writeWithProgressTracker(finalizedByteArray);
 
                 ArrayList<Integer> arrayOfMissingPackets = new ArrayList<Integer>();

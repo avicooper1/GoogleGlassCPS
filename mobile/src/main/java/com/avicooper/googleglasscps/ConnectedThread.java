@@ -21,6 +21,7 @@ public class ConnectedThread extends Thread {
     private final JClient client = new JClient(101, 102, true);
     private int returnInt = 0;
     private boolean connectedToMFServerNode = false;
+    private boolean useMFStack = false;
 
     public ConnectedThread(BluetoothSocket socket, MainActivity mainPassedIn) {
         mmSocket = socket;
@@ -43,18 +44,20 @@ public class ConnectedThread extends Thread {
         mmInStream = tmpIn;
         mmOutStream = tmpOut;
         start();
-        try{
-            Thread t = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    client.start();
-                    connectedToMFServerNode = true;
-                }
-            });
-            t.start();
-        }
-        catch (Exception e){
-            Log.d("asdf mobile", "MF .start() failed");
+
+        if (useMFStack) {
+            try {
+                Thread t = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        client.start();
+                        connectedToMFServerNode = true;
+                    }
+                });
+                t.start();
+            } catch (Exception e) {
+                Log.d("asdf mobile", "MF .start() failed");
+            }
         }
     }
 
@@ -94,8 +97,9 @@ public class ConnectedThread extends Thread {
     byte[][][] aggregatedBuffer;
     byte[][] finalizedBuffer;
     int sendCycleCounter = 0;
-    int packetsAmount;
+    int packetsAmount = 100;
     boolean waitingForCommand = true;
+    int readCounter = 0;
 
 
     //My this class methods
@@ -109,8 +113,14 @@ public class ConnectedThread extends Thread {
             // Read from the InputStream
             try {
                 mmInStream.read(buffer);
-                //printOutBytesArray(buffer);
-                Log.d("buffer mobile", new String(buffer));
+                readCounter++;
+                printOutBytesArray(buffer);
+                if (readCounter > packetsAmount * 2) {
+                    write(noMissingPacketsNotice);
+                    waitingForCommand = true;
+                    readCounter = 0;
+                    Log.d("asdf mobile", "stopped trying to read messages.");
+                }
             } catch (IOException e) {
             }
 
@@ -138,11 +148,12 @@ public class ConnectedThread extends Thread {
                 if (Arrays.equals(buffer, intermediateMessageNotice)) {
                     sendCycleCounter++;
                     Log.d("asdf mobile", "received intermediate message");
+                    readCounter = 0;
                 }
                 if (Arrays.equals(buffer, lastMessageNotice)) {
                     Log.d("asdf mobile", "received final message");
 
-                    long beginTime = System.nanoTime();
+                    //long beginTime = System.nanoTime();
 
                     sendCycleCounter++;
 
@@ -151,17 +162,20 @@ public class ConnectedThread extends Thread {
                     ArrayList<Integer> intsOfMissingPackets = new ArrayList<>();
                     for (int x = 0; x < packetsAmount; x++) {
                         //if (Arrays.equals(finalizedBuffer[x], emptyByteArray)) {
-                            if (!findCorrectPacket(x, 0, 1)) {
-                                intsOfMissingPackets.add(x);
-                          //  }
+                        if (!findCorrectPacket(x, 0, 1)) {
+                            intsOfMissingPackets.add(x);
+                            //  }
                         }
                     }
 
                     if (intsOfMissingPackets.size() == 0) {
                         write(noMissingPacketsNotice);
                         waitingForCommand = true;
-                        Log.d("asdf mobile", "the total check time was: " + String.valueOf((System.nanoTime() - beginTime) / 1000000.0) + " ms.");
+                        //Log.d("asdf mobile", "the total check time was: " + String.valueOf((System.nanoTime() - beginTime) / 1000000.0) + " ms.");
                         showPicture();
+                    } else if (intsOfMissingPackets.size() > 100) {
+                        write(noMissingPacketsNotice);
+                        waitingForCommand = true;
                     } else {
                         Log.d("asdf mobile", "the following packets were not received:");
                         ArrayList<byte[]> byteArrayPacketsOfMissingPackets = new ArrayList<>();
@@ -193,15 +207,14 @@ public class ConnectedThread extends Thread {
     }
 
     private boolean findCorrectPacket(int header, int checkSendCount1, int checkSendCount2) {
-        if (checkSendCount2 == 3){
+        if (checkSendCount2 == 3) {
             return false;
         }
 
-        if (Arrays.equals(aggregatedBuffer[checkSendCount1][header], aggregatedBuffer[checkSendCount2][header]) && !Arrays.equals(aggregatedBuffer[checkSendCount1][header], emptyByteArray)){
+        if (Arrays.equals(aggregatedBuffer[checkSendCount1][header], aggregatedBuffer[checkSendCount2][header]) && !Arrays.equals(aggregatedBuffer[checkSendCount1][header], emptyByteArray)) {
             finalizedBuffer[header] = aggregatedBuffer[checkSendCount1][header].clone();
             return true;
-        }
-        else{
+        } else {
             Log.d("asdf mobile", "didnt get first packet");
             return findCorrectPacket(header, checkSendCount2, checkSendCount2 + 1);
         }
@@ -217,7 +230,7 @@ public class ConnectedThread extends Thread {
             }
         }
 
-        if (connectedToMFServerNode){
+        if (useMFStack && connectedToMFServerNode) {
             returnInt = client.sendImage(singleByteArray, singleByteArray.length);
             if (returnInt < 0) {
                 Log.d("asdf mobile", "MF client send failed");

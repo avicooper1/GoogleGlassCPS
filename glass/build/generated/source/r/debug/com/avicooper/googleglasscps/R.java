@@ -11,8 +11,9 @@ public final class R {
     public static final class attr {
     }
     public static final class drawable {
-        public static final int ic_glass_logo=0x7f020000;
-        public static final int ic_stop=0x7f020001;
+        public static final int forest=0x7f020000;
+        public static final int ic_glass_logo=0x7f020001;
+        public static final int ic_stop=0x7f020002;
     }
     public static final class id {
         public static final int counter=0x7f080002;
